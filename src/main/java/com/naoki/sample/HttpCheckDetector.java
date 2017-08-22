@@ -2,15 +2,16 @@ package com.naoki.sample;
 
 import com.android.annotations.NonNull;
 import com.android.tools.lint.detector.api.*;
-import com.intellij.psi.*;
+import com.intellij.psi.JavaElementVisitor;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiLiteralExpression;
 
-import java.util.Arrays;
-import java.util.EnumSet;
+import java.util.Collections;
 import java.util.List;
 
 public class HttpCheckDetector extends Detector implements Detector.JavaPsiScanner {
 
-    public static Issue ISSUE =
+    static Issue ISSUE =
             Issue.create("WriteHttpDirect",
                     "Write http url direct in code",
                     "Don't write http/https url direct in code.",
@@ -18,7 +19,6 @@ public class HttpCheckDetector extends Detector implements Detector.JavaPsiScann
                     7,
                     Severity.ERROR,
                     new Implementation(HttpCheckDetector.class,
-                            EnumSet.of(Scope.JAVA_FILE),
                             Scope.JAVA_FILE_SCOPE));
 
     @Override
@@ -28,35 +28,20 @@ public class HttpCheckDetector extends Detector implements Detector.JavaPsiScann
 
     @Override
     public List<Class<? extends PsiElement>> getApplicablePsiTypes() {
-//        return Arrays.asList(
-//                PsiJavaFile.class);
-        return Arrays.asList(
-                PsiMethod.class);
+        return Collections.singletonList(
+                PsiLiteralExpression.class);
     }
 
     private static class JavaCustomVisitor extends JavaElementVisitor {
-        private JavaContext mContext;
         private HttpDirectChecker mChecker;
 
         JavaCustomVisitor(JavaContext context) {
-            mContext = context;
             mChecker = new HttpDirectChecker(context);
         }
 
         @Override
-        public void visitJavaFile(PsiJavaFile file) {
-            mChecker.check(file);
-
-        }
-
-        @Override
-        public void visitComment(PsiComment comment) {
-            super.visitComment(comment);
-        }
-
-        @Override
-        public void visitMethod(PsiMethod method) {
-            super.visitMethod(method);
+        public void visitLiteralExpression(PsiLiteralExpression expression) {
+            mChecker.check(expression);
         }
     }
 
@@ -67,13 +52,14 @@ public class HttpCheckDetector extends Detector implements Detector.JavaPsiScann
             mContext = context;
         }
 
-        void check(PsiJavaFile file) {
-            String source = file.getText();
+        void check(PsiElement element) {
+            String source = element.getText();
             if (source.contains("http://") || source.contains("https://")) {
-                int startOffset = source.indexOf("http");
-                int endOffset = source.contains("https://") ? source.indexOf("http") + 8 : source.indexOf("http") + 7;
-                Location location = createLocation(source, startOffset, endOffset);
-                mContext.report(ISSUE, location,
+                int startOffset = element.getTextRange().getStartOffset();
+                int endOffset = element.getTextRange().getEndOffset();
+                Location location = createLocation(mContext.getJavaFile().getText(), startOffset, endOffset);
+                mContext.report(ISSUE,
+                        location,
                         "Don't write http:// code direct!!!");
             }
         }
