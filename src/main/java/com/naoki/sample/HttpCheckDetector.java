@@ -59,6 +59,7 @@ public class HttpCheckDetector extends Detector implements Detector.JavaPsiScann
                 int endOffset = element.getTextRange().getEndOffset();
                 Location location = createLocation(mContext.getJavaFile().getText(), startOffset, endOffset);
                 mContext.report(ISSUE,
+                        element,
                         location,
                         "Don't write http:// code direct!!!");
             }

@@ -25,3 +25,5 @@ jar {
         attributes("Lint-Registry": "com.naoki.sample.LintIssueRegistry")
     }
 }
+
+defaultTasks 'assemble'
